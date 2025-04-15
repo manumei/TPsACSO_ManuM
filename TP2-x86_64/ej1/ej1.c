@@ -3,29 +3,82 @@
 string_proc_list *string_proc_list_create(void)
 {
 	// Inicializa una estructura de lista
+	string_proc_list *list = (string_proc_list *)malloc(sizeof(string_proc_list));
+	if (list == NULL)
+	{
+		return NULL; // fallback in case of allocation failure
+	}
+	list->first = NULL;
+	list->last = NULL;
+	return list;
 }
 
 string_proc_node *string_proc_node_create(uint8_t type, char *hash)
 {
-	// Inicializa un nodo con el tipo y el hash dado.
-	// El nodo tiene que apuntar al hash pasado por parámetro (no hay que copiarlo).
+	string_proc_node *node = (string_proc_node *)malloc(sizeof(string_proc_node));
+	if (node == NULL)
+	{
+		return NULL; // handle allocation failure
+	}
+	node->type = type;
+	node->hash = hash; // important: DO NOT copy the string
+	node->next = NULL;
+	node->previous = NULL;
+	return node;
 }
 
 void string_proc_list_add_node(string_proc_list *list, uint8_t type, char *hash)
 {
 	// Adds a new node to the end of the list, with the type and the given hash
 	// Remember, the hash must not be copied, but rather pointed to.
+	string_proc_node *new_node = string_proc_node_create(type, hash);
+	if (new_node == NULL)
+		return;
+
+	if (list->first == NULL)
+	{
+		// List is empty
+		list->first = new_node;
+		list->last = new_node;
+	}
+	else
+	{
+		// Append to the end
+		new_node->previous = list->last;
+		list->last->next = new_node;
+		list->last = new_node;
+	}
 }
 
 char *string_proc_list_concat(string_proc_list *list, uint8_t type, char *hash)
 {
 	// Generates a new hash, concatenating the past hash by parameter with all the hashes of the nodes in the list whose types natch the type passed by parameter.
+	char *result = (char *)malloc(strlen(hash) + 1);
+	if (result == NULL)
+		return NULL;
+	strcpy(result, hash);
+
+	string_proc_node *current = list->first;
+	while (current != NULL)
+	{
+		if (current->type == type)
+		{
+			char *new_result = str_concat(result, current->hash);
+			free(result);
+			result = new_result;
+		}
+		current = current->next;
+	}
+
+	return result;
 }
 
 /** AUX FUNCTIONS **/
 
 void string_proc_list_destroy(string_proc_list *list)
 {
+	if (list == NULL)
+		return;
 
 	/* borro los nodos: */
 	string_proc_node *current_node = list->first;
@@ -44,6 +97,9 @@ void string_proc_list_destroy(string_proc_list *list)
 
 void string_proc_node_destroy(string_proc_node *node)
 {
+	if (node == NULL)
+		return; // prevents crashing on NULL
+
 	node->next = NULL;
 	node->previous = NULL;
 	node->hash = NULL;
