@@ -12,7 +12,7 @@ para obtener el string, y obtuve "Cada uno es como Dios le hizo, y aun peor much
 [Phase 2]
 BUsco phase_2 en el assembly.txt, encuentro 
 Veo que guarda tres valores, con cada (call 406890 <__strtol>) y subsecuente mov 
-En los movs de abajo guarda rbp, rbx & eax. Estos siendo mis 3 inputs, que puedo tomar como numeros enteros.
+En los movs de abajo guarda rbp, rbx & eax. Estos siendo mis 3 inputs, que viendo el resto del codigo puedo tomar que van a ser numeros enteros.
 rbp = a, rbx = b, eax = c. 
 
 401e94 hace xor ebx,ebp
