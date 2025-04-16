@@ -1,4 +1,5 @@
-Primero desensamble la bomba en un .txt para poder mirar el codigo, y con Ctrl+F fui yendo a las fases
+En este archivo resumo brevemente las lineas clave de cada fase realizada de la bomba, y como desactivarlas.
+Se llego a estas conclusiones con una combinacion de leer el desensamblado de la bomba en un .txt, y usar el gdb para debuggear por paso y por linea
 
 [Phase 1]
 Mire el codigo de la Fase 1 y vi que llamaba un strings_not_equal
@@ -10,7 +11,7 @@ para obtener el string, y obtuve "Cada uno es como Dios le hizo, y aun peor much
 
 
 [Phase 2]
-BUsco phase_2 en el assembly.txt, encuentro 
+Busco phase_2 en el assembly.txt, encuentro 
 Veo que guarda tres valores, con cada (call 406890 <__strtol>) y subsecuente mov 
 En los movs de abajo guarda rbp, rbx & eax. Estos siendo mis 3 inputs, que viendo el resto del codigo puedo tomar que van a ser numeros enteros.
 rbp = a, rbx = b, eax = c. 
@@ -48,10 +49,39 @@ c = -1
 
 
 [Phase 3]
-suma de indices ._.
-(busqueda binaria de la palabra, y va sumando los indices por los que pasa)
-mid_word, mid_index
-one_fourth_word, mid_index + one_fourth_index
-one_eighth_word, mid_index + one_fourth_index + one_eighth_index
-etc.
+Para empezar, me di cuenta que la Fase 3, en <cuenta> ejecuta una busqueda binaria. 
+Con el debugger lo podes ver si vas guardando los valores y viendo la recursividad,
+pero para verlo desde afuera, voy a ir mostrando mas o menos las lineas mas importantes que lo resaltan. 
+Lo voy a estructurar en 
+- como sabemos el formato
+- como se donde busca?
+- como se que es busqueda binaria & recursiva?
+- como se que combinaciones son validos?
 
+
+### Como sabemos el formato del input?
+
+
+### Como se que es Binaria (lineas clave)?
+Descubri que usa un truquito, aprovechando que (a + b) = (a ^ b) + 2 * (a & b)
+Para dividir ambos por 2, y dar con (a + b) / 2 = (a ^ b) / 2 + (a & b)
+Como se ve en las lineas exactas:
+'(xor ebx, ecx)'; (hace el a^b)
+'(sar ebx,1)'; (hace el /2 usando >>1)
+'(and eax, ecx)'; (jace el a&b)
+'(add ebx, eax)' (suma el a&b)
+
+### Como se que es recursiva (lineas clave)?
+(primero que nada, es binaria, no tendria mucho sentido no hacerla recursiva tbh, o solo buscaba la palabra del medio sino)
+Pero, lo confirmo con el debugger, y visto desde afuera, se puede ver con las lineas 
+'je 401fee <cuenta+0x4b>' (se cumple el caso recursivo, hace los pops y el ret despues)
+'js 401ff9 <cuenta+0x56>' (salta a la parte de cuenta en 401ff9, cuando en indice mas bajo que la mitad, busca la parte de abajo)
+(si no se cumple ni el Sign ni el Flag, entonces hace el caso en el que el indice esmas alto que la mitad, busca la parte de arriba)
+'call 401fa3 <cuenta>' (llama a la recu, volviendo al principio de cuenta)
+
+
+### Como sabemos donde hace la busqueda?
+
+
+
+### 
