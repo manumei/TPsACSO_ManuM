@@ -1,0 +1,9 @@
+Primero desensamble la bomba en un .txt para poder mirar el codigo, y con Ctrl+F fui yendo a las fases
+
+[Phase 1]
+Mire el codigo de la Fase 1 y vi que llamaba un strings_not_equal
+Pero antes de llamar a la funcion con el string correcto cargado, dejaba con un comentario arriba 
+En el comentario mostraba cual era la direccion del string guardado en rsi (0x4c9a58)
+Asi que simplemente puse un breakpoint en phase_1, y cuando llegue al breakpoint, corri:
+x/s 0x4c9a58
+para obtener el string, y obtuve "Cada uno es como Dios le hizo, y aun peor muchas veces."
