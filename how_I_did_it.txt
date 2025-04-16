@@ -7,3 +7,30 @@ En el comentario mostraba cual era la direccion del string guardado en rsi (0x4c
 Asi que simplemente puse un breakpoint en phase_1, y cuando llegue al breakpoint, corri:
 x/s 0x4c9a58
 para obtener el string, y obtuve "Cada uno es como Dios le hizo, y aun peor muchas veces."
+
+
+[Phase 2]
+BUsco phase_2 en el assembly.txt, encuentro 
+Veo que guarda tres valores, con cada (call 406890 <__strtol>) y subsecuente mov 
+En los movs de abajo guarda rbp, rbx & eax. Estos siendo mis 3 inputs, que puedo tomar como numeros enteros.
+rbp = a, rbx = b, eax = c
+
+401e94 hace xor ebx,ebp
+Lo cual hace el xor entre (a, b), con ebx y ebp siendo sus versiones de 32 bits para poder hacer el xor, dando (a ^ b)
+Luego del XOR hace un shift right (sar ebx,1), por lo cual el resultado pasa a ser ((a ^ b) >> 1)
+Luego hace un compare en 'cmp ebx,eax', comparando el valor 
+
+401e9a hace 'jne 401eb7 <phase_2+0x95>', un "jump if not equal", 
+Entonces si no dieron iguales, salta directamente a la instruccion 401eb7, que es indeed, explode_bomb
+Mientras que si dieron iguales, sigue con la logica 
+
+
+
+[Phase 3]
+suma de indices ._.
+(busqueda binaria de la palabra, y va sumando los indices por los que pasa)
+mid_word, mid_index
+one_fourth_word, mid_index + one_fourth_index
+one_eighth_word, mid_index + one_fourth_index + one_eighth_index
+etc.
+
