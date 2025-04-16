@@ -3,7 +3,12 @@
 %define TRUE 1
 %define FALSE 0
 
+extern printf
+
 section .data
+msg_concat_start db "Entering concat_asm", 10, 0
+msg_concat_node db "Visiting node", 10, 0
+msg_type db "TYPE RECEIVED in create: %d", 10, 0
 
 section .text
 
@@ -40,11 +45,14 @@ string_proc_list_create_asm:
     ret
 
 
+
 string_proc_node_create_asm:
-    ; Save type (in DIL) and hash (in RSI)
-    push rsi            ; save hash on stack
-    mov rdi, 32         ; size of string_proc_node
-    call malloc         ; malloc(32), result in RAX
+    ; Save incoming type (in DIL) and hash (in RSI)
+    push rsi             ; save hash
+    movzx rcx, dil       ; save type into RCX before trashing RDI
+
+    mov rdi, 32
+    call malloc
     test rax, rax
     je .return_null
 
@@ -54,10 +62,10 @@ string_proc_node_create_asm:
     ; Set previous = NULL
     mov qword [rax + 8], 0
 
-    ; Set type = DIL
-    mov byte [rax + 16], dil
+    ; Set type from RCX (was in DIL)
+    mov byte [rax + 16], cl
 
-    ; Set hash = value saved on stack
+    ; Set hash
     pop rsi
     mov qword [rax + 24], rsi
 
@@ -70,8 +78,8 @@ string_proc_list_add_node_asm:
     push rdx            ; save hash
 
     ; Prepare call to string_proc_node_create_asm(type, hash)
-    mov rdi, rsi        ; type → RDI
-    pop rsi             ; restore hash into RSI
+    movzx rdi, sil    ; zero-extend the 8-bit type to 64-bit RDI
+    pop rsi             ; restore hash
     call string_proc_node_create_asm
     mov rbx, rax        ; new_node in RBX
 
@@ -112,6 +120,10 @@ string_proc_list_concat_asm:
     movzx r12, sil      ; type to compare (zero-extended)
     mov r13, rdx        ; initial hash
 
+    ; Now safe to call printf
+    mov rdi, msg_concat_start
+    call printf
+
     ; malloc(strlen(hash) + 1)
     mov rdi, r13
     call strlen
@@ -134,6 +146,11 @@ string_proc_list_concat_asm:
     ; Compare node->type with input type
     movzx eax, byte [r15 + 16]
     cmp eax, r12d
+
+    ; Debug: visiting node
+    ; mov rdi, msg_concat_node
+    ; call printf
+
     jne .next_node
 
     ; Call str_concat(result, current_node->hash)

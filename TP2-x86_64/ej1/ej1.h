@@ -28,10 +28,10 @@ string_proc_list *string_proc_list_create(void);
 string_proc_list *string_proc_list_create_asm(void);
 
 string_proc_node *string_proc_node_create(uint8_t type, char *hash);
-string_proc_node *string_proc_node_create_asm(uint8_t type, char *hash);
+string_proc_node *string_proc_node_create_asm(int type, char *hash);
 
 void string_proc_list_add_node(string_proc_list *list, uint8_t type, char *hash);
-void string_proc_list_add_node_asm(string_proc_list *list, uint8_t type, char *hash);
+void string_proc_list_add_node_asm(string_proc_list *list, int type, char *hash);
 
 char *string_proc_list_concat(string_proc_list *list, uint8_t type, char *hash);
 char *string_proc_list_concat_asm(string_proc_list *list, uint8_t type, char *hash);
