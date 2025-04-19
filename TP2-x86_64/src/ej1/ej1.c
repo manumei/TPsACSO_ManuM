@@ -6,7 +6,7 @@ string_proc_list *string_proc_list_create(void)
 	string_proc_list *list = (string_proc_list *)malloc(sizeof(string_proc_list));
 	if (list == NULL)
 	{
-		return NULL; // fallback in case of allocation failure
+		return NULL;
 	}
 	list->first = NULL;
 	list->last = NULL;
@@ -18,10 +18,10 @@ string_proc_node *string_proc_node_create(uint8_t type, char *hash)
 	string_proc_node *node = (string_proc_node *)malloc(sizeof(string_proc_node));
 	if (node == NULL)
 	{
-		return NULL; // handle allocation failure
+		return NULL;
 	}
 	node->type = type;
-	node->hash = hash; // important: DO NOT copy the string
+	node->hash = hash;
 	node->next = NULL;
 	node->previous = NULL;
 	return node;
@@ -37,13 +37,11 @@ void string_proc_list_add_node(string_proc_list *list, uint8_t type, char *hash)
 
 	if (list->first == NULL)
 	{
-		// List is empty
 		list->first = new_node;
 		list->last = new_node;
 	}
 	else
 	{
-		// Append to the end
 		new_node->previous = list->last;
 		list->last->next = new_node;
 		list->last = new_node;
@@ -98,7 +96,7 @@ void string_proc_list_destroy(string_proc_list *list)
 void string_proc_node_destroy(string_proc_node *node)
 {
 	if (node == NULL)
-		return; // prevents crashing on NULL
+		return;
 
 	node->next = NULL;
 	node->previous = NULL;
