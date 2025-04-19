@@ -102,3 +102,6 @@ Bueno, dificil de que quede tan claro asi en el markdown. La verdad es que con e
 Y en terminos de codigo, en \<cuenta> va haciendo la recursion hasta llegar a la palabra, y por cada una que pasa en el camino, va guardando los pasos del camino y despues hace 'add ebx,eax' por cada paso, y va sumando y sumando hastaque ebx sea la suma de todos los indices de todos los pasos. 
 
 Asi que sabiendo eso, simplemente arme un script de python que haga la busqueda binaria en palabras.txt y sume indices, dada la palabra que quiera, y de ahi le tiro un ejemplo. Personalmente elegi "aprobar" a ver si me traia mejor suerte, y bueno, "aprobar 19757" y el preciado mensaje 'Rayos y Centellas'. 
+
+
+# [Phase 4]
