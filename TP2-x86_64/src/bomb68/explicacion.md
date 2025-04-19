@@ -1,5 +1,9 @@
 _(*Disculpas si quedan algunas cosas del formato no tan prolijas. Lo hice todo en txt y como pospusieron la entrega, a ultimo momento dije ya fue y lo pase a markdown y le clave todos los line breaks (\<br>)_
 
+Nombre & Apellido: Manuel Meiriño
+Email: mmeirino@udesa.edu.ar
+Legajo: 35723
+
 En este archivo resumo brevemente las lineas clave de cada fase realizada de la bomba, y como desactivarlas.
 Se llego a estas conclusiones con una combinacion de leer el desensamblado de la bomba en un .txt, y usar el gdb para debuggear por paso y por linea (las primeras 2 fases apenas requirieron debugger, en la tercera fue muy util).
 
