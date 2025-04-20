@@ -105,3 +105,17 @@ Asi que sabiendo eso, simplemente arme un script de python que haga la busqueda 
 
 
 # [Phase 4]
+
+Viendo el assembler se que se pedía ingresar dos números enteros. Esto se confirma en la línea 'call 407500 <__isoc99_sscanf>', donde lee los valores con scanf. El primero se almacena en [rsp], y el segundo en [rsp+0x4].
+
+Luego, la linea 'and eax,0xf' para limitar el primer número a valores entre 0 y 15 (input % 16, por el 0xf de hexademcima), para despues usarlos como indices de un array de ese tamaño.
+
+El bucle empieza con 'add edx,0x1' que lleva la cuenta de los pasos recorridos. Despues 'mov eax,DWORD PTR [rsi+rax*4]' va al valor del array en la posición actual y con 'add ecx,eax' acumula la suma de todos los valores a los que fue. Y con 'cmp eax,0xf' verifica si llego al ultimo (el 15), y si llego prueba las lineas:
+- 'cmp edx,0xe' (que se hayan recorrido EXACTAMENTE 14, 0xe sendo 14, con edx que era la suma de pasos)
+- 'cmp DWORD PTR [rsp+0x4],ecx' (que la suma acumulada sea igual que el segundo input)
+
+El array.0 contiene 16 ints, y el programa sigue un recorrido donde cada valor apunta al siguiente índice. Asi que para resolver la fase solo tenia que simular los recorridos empezando desde cada indice, hasta encontrar un input que cumpla las dos condiciones de los cmps de ahi arriba:
+- Que el primero tarde exactamente 14 pasos en llegar al valor 15.
+- Que el segundo sea la suma de los valores recorridos.
+
+Por ejemplo: 1, 105
