@@ -13,13 +13,13 @@ int file_getblock(struct unixfilesystem *fs, int inumber, int blockNum, void *bu
     struct inode in;
     if (inode_iget(fs, inumber, &in) < 0)
     {
-        return -1;
+        return -1; // schlecht! (era invalido)
     }
 
     int sectorNum = inode_indexlookup(fs, &in, blockNum);
     if (sectorNum == -1)
     {
-        return -1;
+        return -1; // schlecht!
     }
 
     if (diskimg_readsector(fs->dfd, sectorNum, buf) != DISKIMG_SECTOR_SIZE)

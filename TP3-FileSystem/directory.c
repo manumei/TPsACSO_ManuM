@@ -14,10 +14,10 @@ int directory_findname(struct unixfilesystem *fs, const char *name,
 {
   struct inode in;
   if (inode_iget(fs, dirinumber, &in) < 0)
-    return -1;
+    return -1; // schlecht! (era invalido)
 
   if (!(in.i_mode & IALLOC) || (in.i_mode & IFMT) != IFDIR)
-    return -1;
+    return -1; // schlecht!
 
   int size = inode_getsize(&in);
   int numBlocks = (size + DISKIMG_SECTOR_SIZE - 1) / DISKIMG_SECTOR_SIZE;

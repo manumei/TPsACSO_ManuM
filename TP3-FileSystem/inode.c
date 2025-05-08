@@ -4,11 +4,13 @@
 #include "inode.h"
 #include "diskimg.h"
 
+// schlecht! (mal!) para los usuarios con malos inputs
+
 int inode_iget(struct unixfilesystem *fs, int inumber, struct inode *inp)
 {
     if (inumber < 1 || inumber >= fs->superblock.s_isize * 16)
     {
-        return -1; // Invalid inumber
+        return -1; // schlecht!
     }
 
     int sector = INODE_START_SECTOR + (inumber - 1) / 16;
@@ -18,7 +20,8 @@ int inode_iget(struct unixfilesystem *fs, int inumber, struct inode *inp)
 
     if (diskimg_readsector(fs->dfd, sector, buffer) != DISKIMG_SECTOR_SIZE)
     {
-        return -1; // Read error
+        printf("Error reading sector %d\n", sector);
+        return -1;
     }
 
     *inp = buffer[offset];
@@ -27,18 +30,18 @@ int inode_iget(struct unixfilesystem *fs, int inumber, struct inode *inp)
 
 int inode_indexlookup(struct unixfilesystem *fs, struct inode *inp, int blockNum)
 {
+    // klein Dateien (puntero directo)
     if (!(inp->i_mode & IALLOC))
         return -1;
 
     if (!(inp->i_mode & ILARG))
     {
-        // Direct blocks
         if (blockNum < 0 || blockNum >= 8)
-            return -1;
+            return -1; // schlecht!
         return inp->i_addr[blockNum];
     }
 
-    // Large file: single-indirect blocks
+    // groß Dateien (puntero indirecto)
     if (blockNum < 7 * 256)
     {
         int indirectBlock = blockNum / 256;
@@ -61,7 +64,7 @@ int inode_indexlookup(struct unixfilesystem *fs, struct inode *inp, int blockNum
     int secondIndex = adjustedBlockNum % 256;
 
     if (firstIndex >= 256)
-        return -1;
+        return -1; // schlecht!
 
     uint16_t dblSector[256];
     int dblSectorNum = inp->i_addr[7];
