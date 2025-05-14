@@ -13,7 +13,7 @@
 int pathname_lookup(struct unixfilesystem *fs, const char *pathname)
 {
     if (!pathname || pathname[0] != '/')
-        return -1; // schlecht!
+        return -1; // (mal input)
 
     int inumber = ROOT_INUMBER;
 
@@ -28,7 +28,7 @@ int pathname_lookup(struct unixfilesystem *fs, const char *pathname)
         struct direntv6 entry;
         if (directory_findname(fs, token, inumber, &entry) < 0)
         {
-            return -1; // // schlecht! (no se encontro)
+            return -1; // (mal input)
         }
         inumber = entry.d_inumber;
         token = strtok(NULL, "/");

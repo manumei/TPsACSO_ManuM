@@ -4,13 +4,11 @@
 #include "inode.h"
 #include "diskimg.h"
 
-// schlecht! (mal!) para los usuarios con malos inputs
-
 int inode_iget(struct unixfilesystem *fs, int inumber, struct inode *inp)
 {
     if (inumber < 1 || inumber >= fs->superblock.s_isize * 16)
     {
-        return -1; // schlecht!
+        return -1; // mal input
     }
 
     int sector = INODE_START_SECTOR + (inumber - 1) / 16;
@@ -37,7 +35,7 @@ int inode_indexlookup(struct unixfilesystem *fs, struct inode *inp, int blockNum
     if (!(inp->i_mode & ILARG))
     {
         if (blockNum < 0 || blockNum >= 8)
-            return -1; // schlecht!
+            return -1; // (mal input)
         return inp->i_addr[blockNum];
     }
 
@@ -64,7 +62,7 @@ int inode_indexlookup(struct unixfilesystem *fs, struct inode *inp, int blockNum
     int secondIndex = adjustedBlockNum % 256;
 
     if (firstIndex >= 256)
-        return -1; // schlecht!
+        return -1; // (mal input)
 
     uint16_t dblSector[256];
     int dblSectorNum = inp->i_addr[7];
