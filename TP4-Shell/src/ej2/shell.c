@@ -83,7 +83,7 @@ void parse_args(const char *input, char **argv, int *argc)
 
 int main()
 {
-    char command[256];
+    char command[4096];
     char *commands[MAX_COMMANDS];
     int command_count = 0;
 
