@@ -76,7 +76,7 @@ string_proc_node_create_asm:
  mov  QWORD [rax], NULL
  
  ; node->previous = NULL
- mov  QWORD [rax+8], 0
+ mov  QWORD [rax+8], NULL
  
  ; node->type = type 
  mov  [rax+16], dil ; (dil = los 8 lower bits de rdi, porque el struct decia que es uint8_t)
@@ -86,7 +86,7 @@ string_proc_node_create_asm:
  
  ; Saco del stack y devuelvo el pointer a la lista
  pop  rbp ; Restore caller's base pointer
- ret   ; Return to caller (return value in rax)
+ ret ; Return to caller (return value in rax)
  
 .error:
  ; vacio el stack y devuelvo directamente NULL
@@ -97,50 +97,64 @@ string_proc_node_create_asm:
 
 
 string_proc_list_add_node_asm:
-  push rbp
-  mov  rbp, rsp
-  sub  rsp, 48
-  mov  QWORD [rbp-24], rdi
-  mov  eax, esi
-  mov  QWORD [rbp-40], rdx
-  mov  BYTE [rbp-28], al
-  movzx   eax, BYTE [rbp-28]
-  mov  rdx, QWORD [rbp-40]
-  mov  rsi, rdx
-  mov  edi, eax
-  call string_proc_node_create_asm
-  mov  QWORD [rbp-8], rax
-  cmp  QWORD [rbp-8], 0
-  je   .L11
-  mov  rax, QWORD [rbp-24]
-  mov  rax, QWORD [rax]
-  test rax, rax
-  jne  .L10
-  mov  rax, QWORD [rbp-24]
-  mov  rdx, QWORD [rbp-8]
-  mov  QWORD [rax], rdx
-  mov  rax, QWORD [rbp-24]
-  mov  rdx, QWORD [rbp-8]
-  mov  QWORD [rax+8], rdx
-  jmp  .L7
-.L10:
-  mov  rax, QWORD [rbp-24]
-  mov  rdx, QWORD [rax+8]
-  mov  rax, QWORD [rbp-8]
-  mov  QWORD [rax+8], rdx
-  mov  rax, QWORD [rbp-24]
-  mov  rax, QWORD [rax+8]
-  mov  rdx, QWORD [rbp-8]
-  mov  QWORD [rax], rdx
-  mov  rax, QWORD [rbp-24]
-  mov  rdx, QWORD [rbp-8]
-  mov  QWORD [rax+8], rdx
-  jmp  .L7
-.L11:
-  nop
-.L7:
-  leave
+  ; rdi = string_proc_list* list
+  ; rsi = uint8_t type (only lower 8 bits used)
+  ; rdx = char* hash
+  ; si lista esta vacia, el nodo se vuelve primero y ultimo, otherwise, ultimo
+  
+  ; creo el stack
+  push  rbp
+  mov   rbp, rsp
+  
+  ; guardo los inputs en el stack
+  push  rdi
+  push  rsi
+  push  rdx
+  
+  ; paso los parametros type & hash a donde los toma node_create
+  mov   rdi, rsi
+  mov   rsi, rdx
+  call  string_proc_node_create_asm
+  
+  cmp rax, NULL ; veo si el nodo es NULL
+  je  .null_node
+  
+  ; guardo el nodo y restoreo los valores que guarde en el stack
+  mov   r8, rax ; nodo
+  pop   rdx
+  pop   rsi
+  pop   rdi
+  
+  cmp   QWORD [rdi], NULL ; if list->first == NUL, entonces la lista esta vacia (qword por 8 bytes del primer puntero)
+  je   .list_empty
+
+  ; aca pongo el nuevo nodo
+  mov   rax, [rdi+8] ; a rax le cargo el current last node (para ser el previous del nuevo)  
+  mov   [r8+8], rax ; previous es offset=8, asi que r8+8 es el previous del nuevo nodo
+  mov   [rax], r8    ; hago que current_last->next sea el nuevo nodo (offset=0 asi que accedo a [rax])
+  
+  mov   [rdi+8], r8 ; list->last el nuevo nodo (el next ya es NULL por como hice node_create)
+  jmp   .finalizar
+
+.list_empty:
+  ; el nodo (r8) va primero y ultimo
+  mov   [rdi], r8 ; list->first
+  mov   [rdi+8], r8 ; list->last
+  jmp   .finalizar
+  
+.null_node:
+  ; vacio el stack y nada mas (se va a devolver NULL)
+  pop rdx
+  pop rsi  
+  pop rdi
+  jmp .finalizar
+  
+.finalizar:
+  ; vacio el stack y devuelvo
+  pop   rbp
   ret
+
+
 
 string_proc_list_concat_asm:
   push rbp
@@ -173,7 +187,7 @@ string_proc_list_concat_asm:
   jmp  .L15
 .L17:
   mov  rax, QWORD [rbp-16]
-  movzx   eax, BYTE [rax+16]
+  movzx eax, BYTE [rax+16]
   cmp  BYTE [rbp-44], al
   jne  .L16
   mov  rax, QWORD [rbp-16]
