@@ -50,7 +50,8 @@ void string_proc_list_add_node(string_proc_list *list, uint8_t type, char *hash)
 
 char *string_proc_list_concat(string_proc_list *list, uint8_t type, char *hash)
 {
-	// Generates a new hash, concatenating the past hash by parameter with all the hashes of the nodes in the list whose types natch the type passed by parameter.
+	// Generates a new hash, concatenating the past hash by parameter with
+	// all the hashes of the nodes in the list whose types match the type passed by parameter.
 	char *result = (char *)malloc(strlen(hash) + 1);
 	if (result == NULL)
 		return NULL;

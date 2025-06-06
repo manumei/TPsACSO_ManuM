@@ -85,15 +85,14 @@ string_proc_node_create_asm:
  mov  [rax+24], rsi
  
  ; Saco del stack y devuelvo el pointer a la lista
- pop  rbp ; Restore caller's base pointer
- ret ; Return to caller (return value in rax)
+ pop  rbp
+ ret
  
 .error:
  ; vacio el stack y devuelvo directamente NULL
  pop  rsi
  pop  rdi
  xor  rax, rax ; con esto aseguro que rax sea NULL
-
 
 
 string_proc_list_add_node_asm:
@@ -130,7 +129,7 @@ string_proc_list_add_node_asm:
 
   ; aca pongo el nuevo nodo
   mov   rax, [rdi+8] ; a rax le cargo el current last node (para ser el previous del nuevo)  
-  mov   [r8+8], rax ; previous es offset=8, asi que r8+8 es el previous del nuevo nodo
+  mov   [r8+8], rax  ; previous es offset=8, asi que r8+8 es el previous del nuevo nodo
   mov   [rax], r8    ; hago que current_last->next sea el nuevo nodo (offset=0 asi que accedo a [rax])
   
   mov   [rdi+8], r8 ; list->last el nuevo nodo (el next ya es NULL por como hice node_create)
@@ -155,61 +154,93 @@ string_proc_list_add_node_asm:
   ret
 
 
-
 string_proc_list_concat_asm:
-  push rbp
-  mov  rbp, rsp
-  sub  rsp, 64
-  mov  QWORD [rbp-40], rdi
-  mov  eax, esi
-  mov  QWORD [rbp-56], rdx
-  mov  BYTE [rbp-44], al
-  mov  rax, QWORD [rbp-56]
-  mov  rdi, rax
-  call strlen
-  add  rax, 1
-  mov  rdi, rax
-  call malloc
-  mov  QWORD [rbp-8], rax
-  cmp  QWORD [rbp-8], 0
-  jne  .L13
-  mov  eax, 0
-  jmp  .L14
-.L13:
-  mov  rdx, QWORD [rbp-56]
-  mov  rax, QWORD [rbp-8]
-  mov  rsi, rdx
-  mov  rdi, rax
-  call strcpy
-  mov  rax, QWORD [rbp-40]
-  mov  rax, QWORD [rax]
-  mov  QWORD [rbp-16], rax
-  jmp  .L15
-.L17:
-  mov  rax, QWORD [rbp-16]
-  movzx eax, BYTE [rax+16]
-  cmp  BYTE [rbp-44], al
-  jne  .L16
-  mov  rax, QWORD [rbp-16]
-  mov  rdx, QWORD [rax+24]
-  mov  rax, QWORD [rbp-8]
-  mov  rsi, rdx
-  mov  rdi, rax
-  call str_concat
-  mov  QWORD [rbp-24], rax
-  mov  rax, QWORD [rbp-8]
-  mov  rdi, rax
-  call free
-  mov  rax, QWORD [rbp-24]
-  mov  QWORD [rbp-8], rax
-.L16:
-  mov  rax, QWORD [rbp-16]
-  mov  rax, QWORD [rax]
-  mov  QWORD [rbp-16], rax
-.L15:
-  cmp  QWORD [rbp-16], 0
-  jne  .L17
-  mov  rax, QWORD [rbp-8]
-.L14:
-  leave
-  ret
+    ; rdi = list pointer
+    ; sil = type (como es uint8_t guardo solo los 8 lower bits, sil hace eso para rsi)
+    ; rdx = hash pointer
+
+    ; creo el stack
+    push  rbp
+    mov   rbp, rsp
+
+    ; voy a estar guardando los parametros en estos registers
+    ; asi que los guardo en el stack para no perderlos y devolverselos al que llamo la funcion
+    push  rbx
+    push  r12
+    push  r13
+
+    ; Store parameters in callee-saved registers for safety
+    mov   rbx, rdi ; list
+    mov   r12b, sil ; r12b es los 8 lower bits de r12, porque again, type es uint8_t y le hago sil para agarrar los 8 lowers de rsi
+    mov   r13, rdx ; hash
+    
+    ; preparo para alocar memoria
+    mov   rdi, r13
+    call  strlen ; devuelve en rax
+    add   rax, 1 ; para el null terminator
+    mov   rdi, rax ; rdi = tamaño final para el malloc, ya que malloc usa rdi por default
+
+    ; aloco memoria para el result
+    call  malloc ; aloca a rax
+    cmp   rax, NULL ; si falla el malloc, error
+    je    error_malloc
+    
+    ; Copy initial hash to result buffer
+    mov   rdi, rax                ; rdi = result buffer
+    mov   rsi, r13                ; rsi = initial hash
+    push  rax                     ; save result pointer on stack
+    call  strcpy                  ; copy initial hash to result
+    pop   rax                     ; restore result pointer to rax
+    
+    ; Initialize loop - get first node from list
+    mov   rcx, QWORD [rbx]        ; rcx = list->first (current node pointer)
+    test  rcx, rcx                ; check if list is empty
+    jz    concatenation_done      ; if empty, we're done
+    
+traverse_list:
+    ; Check if current node's type matches the target type
+    mov   dl, BYTE [rcx + 16]     ; dl = current_node->type
+    cmp   dl, r12b                ; compare with target type
+    jne   next_node               ; if not equal, skip this node
+    
+    ; Types match - concatenate this node's hash
+    push  rax                     ; save current result pointer
+    push  rcx                     ; save current node pointer
+    
+    ; Call str_concat(current_result, current_node->hash)
+    mov   rdi, rax                ; rdi = current result
+    mov   rsi, QWORD [rcx + 24]   ; rsi = current_node->hash
+    call  str_concat              ; rax = new concatenated string
+    
+    pop   rcx                     ; restore current node pointer
+    pop   rdi                     ; restore old result pointer to rdi
+    
+    ; Free old result and update to new result
+    push  rax                     ; save new result pointer
+    push  rcx                     ; save current node pointer
+    call  free                    ; free old result
+    pop   rcx                     ; restore current node pointer
+    pop   rax                     ; restore new result pointer
+    
+next_node:
+    ; Move to next node in the list
+    mov   rcx, QWORD [rcx]        ; rcx = current_node->next
+    test  rcx, rcx                ; check if we've reached the end
+    jnz   traverse_list           ; if not null, continue traversing
+    
+concatenation_done:
+    ; Restore callee-saved registers and return
+    pop   r13
+    pop   r12
+    pop   rbx
+    pop   rbp
+    ret
+
+error_malloc:
+    ; Return NULL if initial malloc failed
+    xor   rax, rax ; rax = NULL
+    pop   r13
+    pop   r12
+    pop   rbx
+    pop   rbp
+    ret
