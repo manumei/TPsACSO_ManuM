@@ -227,7 +227,7 @@ siguiente_nodo:
     jne    iterar_lista ; si es NULL, terminamos (pasa al codigo de aba)
     
 termine_de_concatenar:
-    ; restoro los registers & return
+    ; vacio el stack & return
     pop   r13
     pop   r12
     pop   rbx
@@ -235,7 +235,7 @@ termine_de_concatenar:
     ret
 
 error_malloc:
-    ; Return NULL if initial malloc failed
+    ; vacio y me voy si fallo el maloc
     xor   rax, rax ; con esto aseguro que rax sea NULL
     pop   r13
     pop   r12
