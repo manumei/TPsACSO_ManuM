@@ -3,8 +3,6 @@
 %define TRUE 1
 %define FALSE 0
 
-section .data
-
 section .text
 
 global string_proc_list_create_asm
@@ -184,52 +182,52 @@ string_proc_list_concat_asm:
     call  malloc ; aloca a rax
     cmp   rax, NULL ; si falla el malloc, error
     je    error_malloc
-    
-    ; Copy initial hash to result buffer
-    mov   rdi, rax                ; rdi = result buffer
-    mov   rsi, r13                ; rsi = initial hash
-    push  rax                     ; save result pointer on stack
-    call  strcpy                  ; copy initial hash to result
-    pop   rax                     ; restore result pointer to rax
+
+    ; llamo strcpy 
+    mov   rdi, rax  ; memoria para el result
+    mov   rsi, r13  ; el hash (para pasarle al strcpy)
+    push  rax       ; guardo el puntero (por si acaso si strcpy lo modifica, aunque no deberia por lo que lei en google)
+    call  strcpy
+    pop   rax       ; again, por si las moscas
     
     ; Initialize loop - get first node from list
-    mov   rcx, QWORD [rbx]        ; rcx = list->first (current node pointer)
-    test  rcx, rcx                ; check if list is empty
-    jz    concatenation_done      ; if empty, we're done
+    mov   rcx, QWORD [rbx] ; lee el primer nodo (8 bytes)
+    cmp   rcx, NULL
+    je    termine_de_concatenar ; si la lista esta vacia (first is NULL)
     
-traverse_list:
-    ; Check if current node's type matches the target type
-    mov   dl, BYTE [rcx + 16]     ; dl = current_node->type
-    cmp   dl, r12b                ; compare with target type
-    jne   next_node               ; if not equal, skip this node
+  iterar_lista:
+    ; dl son los 8 lower bits de rdx, asi guardo el type
+    mov   dl, BYTE [rcx + 16] ; BYTE lee 1 byte (8 bits), meaning el tamaño del type, que estaba en el offset=16
+    cmp   dl, r12b
+    jne   siguiente_nodo ; salteo si no son del mismo type
     
-    ; Types match - concatenate this node's hash
-    push  rax                     ; save current result pointer
-    push  rcx                     ; save current node pointer
+    ; si matchean los guardo antes del str_concat
+    push  rax ; result
+    push  rcx ; node
     
-    ; Call str_concat(current_result, current_node->hash)
-    mov   rdi, rax                ; rdi = current result
-    mov   rsi, QWORD [rcx + 24]   ; rsi = current_node->hash
-    call  str_concat              ; rax = new concatenated string
+    ; concateneo los hashes
+    mov   rdi, rax                ;
+    mov   rsi, QWORD [rcx + 24]   ; el hash en el offset=24, de tamaño 8 bytes
+    call  str_concat              ; con rdi=result, rsi=hash, guarda en rax
+
+    pop   rcx ; node
+    pop   rdi ; result
     
-    pop   rcx                     ; restore current node pointer
-    pop   rdi                     ; restore old result pointer to rdi
+    ; Free (rdi), por si acaso pusheo y popeo mis rax & rcx por si free los llegase a cambiar
+    push  rax ; el nuevo result (la string concatenada)
+    push  rcx
+    call  free
+    pop   rcx
+    pop   rax
     
-    ; Free old result and update to new result
-    push  rax                     ; save new result pointer
-    push  rcx                     ; save current node pointer
-    call  free                    ; free old result
-    pop   rcx                     ; restore current node pointer
-    pop   rax                     ; restore new result pointer
+siguiente_nodo:
+    ; sigo el loop
+    mov   rcx, QWORD [rcx]  ; next node
+    cmp   rcx, NULL
+    jne    iterar_lista ; si es NULL, terminamos (pasa al codigo de aba)
     
-next_node:
-    ; Move to next node in the list
-    mov   rcx, QWORD [rcx]        ; rcx = current_node->next
-    test  rcx, rcx                ; check if we've reached the end
-    jnz   traverse_list           ; if not null, continue traversing
-    
-concatenation_done:
-    ; Restore callee-saved registers and return
+termine_de_concatenar:
+    ; vacio el stack & return
     pop   r13
     pop   r12
     pop   rbx
@@ -237,8 +235,8 @@ concatenation_done:
     ret
 
 error_malloc:
-    ; Return NULL if initial malloc failed
-    xor   rax, rax ; rax = NULL
+    ; vacio y me voy si fallo el maloc
+    xor   rax, rax ; con esto aseguro que rax sea NULL
     pop   r13
     pop   r12
     pop   rbx
